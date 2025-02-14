@@ -7,7 +7,7 @@ return {
     dependencies = {
       "mason.nvim",
       "williamboman/mason-lspconfig.nvim",
-      "hrsh7th/cmp-nvim-lsp",
+      "saghen/blink.cmp",
     },
 
     opts = {
@@ -121,7 +121,7 @@ return {
         return
       end
 
-      local has_cmp, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
+      local has_cmp, blink_cmp = pcall(require, "blink.cmp")
       if not has_cmp then
         return
       end
@@ -141,7 +141,7 @@ return {
         "force",
         {},
         vim.lsp.protocol.make_client_capabilities(),
-        has_cmp and cmp_nvim_lsp.default_capabilities() or {},
+        has_cmp and blink_cmp.get_lsp_capabilities(capabilities) or {},
         opts.capabilities or {}
       )
 
@@ -154,7 +154,7 @@ return {
           lspconfig[server_name].setup({
             capabilities = capabilities,
             on_attach = lsp_attach,
-            settings = opts.servers[server_name],
+            settings = (opts.servers[server_name] or {}).settings,
           })
         end,
       })

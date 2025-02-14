@@ -7,24 +7,14 @@ K.LspKeymaps = function(_, bufnr)
   keymap("n", "<leader>ca", vim.lsp.buf.code_action, { buffer = bufnr, desc = "[C]ode [A]ction" })
   keymap("n", "<leader>gd", vim.lsp.buf.definition, { buffer = bufnr, desc = "[G]oto [D]efinition" })
   keymap("n", "<leader>gD", vim.lsp.buf.declaration, { buffer = bufnr, desc = "[G]oto [D]eclaration" })
-  keymap(
-    "n",
-    "<leader>gr",
-    require("telescope.builtin").lsp_references,
-    { buffer = bufnr, desc = "[G]oto [R]eferences" }
-  )
+  keymap("n", "<leader>gr", require("fzf-lua").lsp_references, { buffer = bufnr, desc = "[G]oto [R]eferences" })
   keymap("n", "<leader>gI", vim.lsp.buf.implementation, { buffer = bufnr, desc = "[G]oto [I]mplementation" })
   keymap("n", "<leader>D", vim.lsp.buf.type_definition, { buffer = bufnr, desc = "Type [D]efinition" })
-  keymap(
-    "n",
-    "<leader>ds",
-    require("telescope.builtin").lsp_document_symbols,
-    { buffer = bufnr, desc = "[D]ocument [S]ymbols" }
-  )
+  keymap("n", "<leader>ds", require("fzf-lua").lsp_document_symbols, { buffer = bufnr, desc = "[D]ocument [S]ymbols" })
   keymap(
     "n",
     "<leader>ws",
-    require("telescope.builtin").lsp_dynamic_workspace_symbols,
+    require("fzf-lua").lsp_workspace_symbols,
     { buffer = bufnr, desc = "[W]orkspace [S]ymbols" }
   )
   keymap("n", "<leader>waf", vim.lsp.buf.add_workspace_folder, { buffer = bufnr, desc = "[W]orkspace [A]dd [F]older" })
