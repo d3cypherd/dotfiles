@@ -8,6 +8,7 @@ return {
       "mason.nvim",
       "williamboman/mason-lspconfig.nvim",
       "saghen/blink.cmp",
+      { "Hoffs/omnisharp-extended-lsp.nvim" },
     },
 
     opts = {
@@ -191,6 +192,20 @@ return {
       --  },
       --})
 
+      -- C#
+      lspconfig.omnisharp.setup({
+        on_attach = lsp_attach,
+        capabilities = capabilities,
+        enable_roslyn_analysers = true,
+        enable_import_completion = true,
+        organize_imports_on_format = true,
+        enable_decompilation_support = true,
+        filetypes = { "cs", "vb", "csproj", "sln", "slnx", "props", "csx", "targets", "tproj", "slngen", "fproj" },
+        handlers = {
+          ["textDocument/definition"] = require("omnisharp_extended").handler,
+        },
+      })
+
       -- Clangd
       lspconfig.clangd.setup({
         on_attach = lsp_attach,
@@ -224,6 +239,9 @@ return {
           package_uninstalled = "✗",
         },
       },
+    },
+    dependencies = {
+      "williamboman/mason-lspconfig.nvim",
     },
   },
 

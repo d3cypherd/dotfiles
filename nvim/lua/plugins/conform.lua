@@ -25,6 +25,7 @@ return {
       javascript = { "prettierd", "prettier", stop_after_first = true },
       c = { "clang-format" },
       go = { "goimports", "gofumpt" },
+      cs = { "csharpier" },
     },
     -- Set default options
     default_format_opts = {
@@ -37,6 +38,13 @@ return {
       },
       shfmt = {
         prepend_args = { "-i", "4" },
+      },
+      csharpier = {
+        inherit = false,
+        command = vim.fn.stdpath("data") .. "/mason/packages/csharpier/csharpier",
+        args = { "format", "$FILENAME" },
+        stdin = false,
+        cwd = require("conform.util").root_file({ "sln", "csproj" }),
       },
     },
   },

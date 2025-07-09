@@ -10,7 +10,7 @@ return {
         enable = true,
       },
       -- enable indentation
-      indent = { enable = true },
+      indent = { enable = false },
       -- ensure these language parsers are installed
       ensure_installed = {
         "json",
@@ -22,6 +22,7 @@ return {
         "gosum",
         "c",
         "cpp",
+        "c_sharp",
         "yaml",
         "html",
         "css",

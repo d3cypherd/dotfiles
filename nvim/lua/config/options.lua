@@ -5,6 +5,7 @@
 --Set default python3 path
 vim.g.python3_host_prog = "/usr/bin/python3"
 --Disable smartindent (use "tresitter.indent" better)
-vim.opt.smartindent = false
+vim.opt.smartindent = true
+vim.opt.autoindent = true
 -- Adjust line number width
 -- vim.o.signcolumn = "yes:2"
