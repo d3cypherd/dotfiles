@@ -1,5 +1,5 @@
 .DS_Store
-lazy-lock.json
+nvim/lazy-lock.json
 
 configstore/
 gtk-4.0/
