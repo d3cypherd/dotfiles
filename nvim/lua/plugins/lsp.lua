@@ -193,7 +193,9 @@ return {
       --})
 
       -- C#
+      local omnisharp_bin = vim.fn.stdpath("data") .. "/mason/packages/omnisharp/OmniSharp"
       lspconfig.omnisharp.setup({
+        cmd = { omnisharp_bin, "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
         on_attach = lsp_attach,
         capabilities = capabilities,
         enable_roslyn_analysers = true,
@@ -202,7 +204,10 @@ return {
         enable_decompilation_support = true,
         filetypes = { "cs", "vb", "csproj", "sln", "slnx", "props", "csx", "targets", "tproj", "slngen", "fproj" },
         handlers = {
-          ["textDocument/definition"] = require("omnisharp_extended").handler,
+          ["textDocument/definition"] = require("omnisharp_extended").definition_handler,
+          ["textDocument/typeDefinition"] = require("omnisharp_extended").type_definition_handler,
+          ["textDocument/references"] = require("omnisharp_extended").references_handler,
+          ["textDocument/implementation"] = require("omnisharp_extended").implementation_handler,
         },
       })
 
