@@ -4,3 +4,6 @@ nvim/lazy-lock.json
 configstore/
 gtk-4.0/
 joplin-desktop/
+gcloud/logs
+gcloud
+gh
