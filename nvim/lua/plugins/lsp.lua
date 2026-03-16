@@ -5,8 +5,6 @@ return {
     "neovim/nvim-lspconfig",
     event = { "BufReadPre", "BufNewFile" },
     dependencies = {
-      "mason.nvim",
-      "williamboman/mason-lspconfig.nvim",
       "saghen/blink.cmp",
       { "Hoffs/omnisharp-extended-lsp.nvim" },
     },
@@ -25,7 +23,7 @@ return {
           },
         },
         gopls = {
-          cmd = { "/usr/bin/go" },
+          cmd = { "go" },
           filetypes = { "go", "gomod", "gowork", "gotmpl" },
           settings = {
             completeUnimported = true,
@@ -68,6 +66,31 @@ return {
           },
           root_dir = util.root_pattern("biome.json", "biome.jsonc"),
           single_file_support = false,
+        },
+        basedpyright = {
+          cmd = { "basedpyright-langserver", "--stdio" },
+          filetypes = { "python" },
+          root_markers = {
+            "pyrightconfig.json",
+            "pyproject.toml",
+            "setup.py",
+            "setup.cfg",
+            "requirements.txt",
+            "Pipfile",
+            ".git",
+          },
+          settings = {
+            basedpyright = {
+              verboseOutput = true,
+              disableOrganizeImports = true,
+              analysis = {
+                typeCheckingMode = "off",
+                autoSearchPaths = true,
+                useLibraryCodeForTypes = true,
+                diagnosticMode = "openFilesOnly",
+              },
+            },
+          },
         },
         --lua_ls = {
         --  Lua = {
@@ -112,92 +135,53 @@ return {
     },
 
     config = function(_, opts)
-      local has_lspconfig, lspconfig = pcall(require, "lspconfig")
-      if not has_lspconfig then
+      -- require statements are still necessary for setup
+      local lspconfig = require("lspconfig")
+      local mason_lspconfig = require("mason-lspconfig")
+      if not pcall(require, "blink.cmp") then
         return
       end
+      local blink_cmp = require("blink.cmp")
 
-      local has_mlspcfg, mason_lspconfig = pcall(require, "mason-lspconfig")
-      if not has_mlspcfg then
-        return
-      end
-
-      local has_cmp, blink_cmp = pcall(require, "blink.cmp")
-      if not has_cmp then
-        return
-      end
-
+      -- configure diagnostics
       vim.diagnostic.config(vim.deepcopy(opts.diagnostics))
 
+      -- setup keymaps
       local K = require("config.lsp_keymaps")
 
+      -- define on_attach
       local lsp_attach = function(client, bufnr)
         K.LspKeymaps(client, bufnr)
         vim.api.nvim_buf_create_user_command(bufnr, "Format", function(_)
           vim.lsp.buf.format()
         end, { desc = "Format current buffer with LSP" })
+        if client.name == "ruff" then
+          client.server_capabilities.hoverProvider = false
+        end
       end
 
+      -- setup capabilities
       local capabilities = vim.tbl_deep_extend(
         "force",
         {},
         vim.lsp.protocol.make_client_capabilities(),
-        has_cmp and blink_cmp.get_lsp_capabilities(capabilities) or {},
+        blink_cmp.get_lsp_capabilities(),
         opts.capabilities or {}
       )
 
-      mason_lspconfig.setup({
-        ensure_installed = vim.tbl_keys(opts.servers),
-      })
-
-      mason_lspconfig.setup_handlers({
-        function(server_name)
-          lspconfig[server_name].setup({
-            capabilities = capabilities,
-            on_attach = lsp_attach,
-            settings = (opts.servers[server_name] or {}).settings,
-          })
-        end,
-      })
-
-      -- ~  Local (on machine) LSP settings
-
-      -- OCaml
-      --lspconfig.ocamllsp.setup({
-      --  on_attach = lsp_attach,
-      --  capabilities = capabilities,
-      --  cmd = { "ocamllsp" },
-      --  filetypes = { "ocaml", "ocaml.menhir", "ocaml.interface", "ocaml.ocamllex", "reason", "dune" },
-      --  root_dir = lspconfig.util.root_pattern(
-      --    "*.opam",
-      --    "ocamlformat",
-      --    "esy.json",
-      --    "package.json",
-      --    ".git",
-      --    "dune-project",
-      --    "dune-workspace"
-      --  ),
-      --})
-
-      -- Rust
-      --lspconfig.rust_analyzer.setup({
-      --  on_attach = lsp_attach,
-      --  capabilities = capabilities,
-      --  settings = {
-      --    ["rust-analyzer"] = {
-      --      checkOnSave = {
-      --        command = "clippy",
-      --      },
-      --    },
-      --  },
-      --})
-
-      -- C#
-      local omnisharp_bin = vim.fn.stdpath("data") .. "/mason/packages/omnisharp/OmniSharp"
-      lspconfig.omnisharp.setup({
-        cmd = { omnisharp_bin, "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
-        on_attach = lsp_attach,
+      -- Set global config for all servers
+      vim.lsp.config("*", {
         capabilities = capabilities,
+        on_attach = lsp_attach,
+      })
+
+      -- Get all servers that need to be configured and installed
+      local servers = opts.servers
+
+      -- Manual configs for omnisharp and clangd
+      local omnisharp_bin = vim.fn.stdpath("data") .. "/mason/packages/omnisharp/OmniSharp"
+      local omnisharp_config = {
+        cmd = { omnisharp_bin, "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
         enable_roslyn_analysers = true,
         enable_import_completion = true,
         organize_imports_on_format = true,
@@ -209,12 +193,9 @@ return {
           ["textDocument/references"] = require("omnisharp_extended").references_handler,
           ["textDocument/implementation"] = require("omnisharp_extended").implementation_handler,
         },
-      })
+      }
 
-      -- Clangd
-      lspconfig.clangd.setup({
-        on_attach = lsp_attach,
-        capabilities = capabilities,
+      local clangd_config = {
         cmd = { "/usr/bin/clangd" },
         filetypes = { "c", "cpp", "objc", "objcpp", "cuda", "proto" },
         root_dir = lspconfig.util.root_pattern(
@@ -227,14 +208,34 @@ return {
           ".git"
         ),
         single_file_support = true,
+      }
+
+      -- Add manual configs to the main servers table to be handled uniformly
+      servers["omnisharp"] = vim.tbl_deep_extend("force", servers["omnisharp"] or {}, omnisharp_config)
+      servers["clangd"] = vim.tbl_deep_extend("force", servers["clangd"] or {}, clangd_config)
+
+      -- Setup mason-lspconfig to ensure servers are installed
+      local servers_to_install = {}
+      for server_name, _ in pairs(servers) do
+        if server_name ~= "*" then
+          table.insert(servers_to_install, server_name)
+        end
+      end
+      require("mason-lspconfig").setup({
+        ensure_installed = servers_to_install,
       })
+
+      -- Apply per-server configurations
+      for server_name, server_opts in pairs(servers) do
+        vim.lsp.config(server_name, server_opts or {})
+      end
     end,
   },
 
   -- ~ Mason
 
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     cmd = "Mason",
     opts = {
       ui = {
@@ -246,7 +247,7 @@ return {
       },
     },
     dependencies = {
-      "williamboman/mason-lspconfig.nvim",
+      "mason-org/mason-lspconfig.nvim",
     },
   },
 

@@ -9,8 +9,25 @@ return {
       function()
         require("conform").format({ async = true })
       end,
-      mode = "",
+      mode = "n",
       desc = "[F]ormat buffer",
+    },
+    {
+      "<leader>f",
+      function()
+        local start_line = vim.fn.line("'<")
+        local end_line = vim.fn.line("'>")
+
+        require("conform").format({
+          async = true,
+          range = {
+            start = { start_line, 0 },
+            ["end"] = { end_line, 0 },
+          },
+        })
+      end,
+      mode = "v",
+      desc = "[F]ormat selection",
     },
   },
   -- This will provide type hinting with LuaLS
@@ -21,7 +38,14 @@ return {
     -- Define your formatters
     formatters_by_ft = {
       lua = { "stylua" },
-      python = { "isort", "black" },
+      python = {
+        -- To fix auto-fixable lint errors.
+        "ruff_fix",
+        -- To run the Ruff formatter.
+        "ruff_format",
+        -- To organize the imports.
+        "ruff_organize_imports",
+      },
       javascript = { "prettierd", "prettier", stop_after_first = true },
       c = { "clang-format" },
       go = { "goimports", "gofumpt" },
@@ -45,6 +69,9 @@ return {
         args = { "format", "$FILENAME" },
         stdin = false,
         cwd = require("conform.util").root_file({ "sln", "csproj" }),
+      },
+      ruff_format = {
+        append_args = { "--line-length", "127" },
       },
     },
   },
